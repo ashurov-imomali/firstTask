@@ -308,7 +308,6 @@ func PrintIP() error {
 }
 
 func main() {
-	//add
 	for true {
 		log.Println("Choose operation:\n 1 - Local IP\n 2 - Print IP \n 3 - Exit")
 		n := 0
