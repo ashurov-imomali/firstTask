@@ -227,6 +227,22 @@ func GetNetworkNumberAndHost(ip []IpBit) ([]IpBit, []IpBit) {
 	}
 }
 
+func GetCountOfIps(startIP, endIP []IpBit) int {
+	var resIp []IpBit
+	count := 1
+	for i, bit := range startIP {
+		bitRes := MinusOperation(endIP[i].Bit, bit.Bit)
+		decRes := BinToDesc(bitRes)
+		resIp = append(resIp, IpBit{decRes, bitRes})
+	}
+	for _, bit := range resIp {
+		if bit.Dec != 0 {
+			count *= bit.Dec
+		}
+	}
+	return count
+}
+
 func PrintIP() error {
 	s := ``
 	log.Println("Print IP/Mask: ")
@@ -261,7 +277,6 @@ func PrintIP() error {
 		decRes := BinToDesc(bitRes)
 		hostIp = append(hostIp, IpBit{decRes, bitRes})
 	}
-
 	var endIp []IpBit
 	for i, bit := range nanMsk {
 		bitRes := OrOperation(bit.Bit, startIp[i].Bit)
@@ -269,12 +284,15 @@ func PrintIP() error {
 		endIp = append(endIp, IpBit{dec, bitRes})
 	}
 	netWorkIp, hostWIp := GetNetworkNumberAndHost(ip.IpBits)
+	countIps := GetCountOfIps(startIp, endIp)
+
 	///Логируем все результаты
 	log.Println("IP:", GetStrIp(ip.IpBits))
 	log.Println("Mask:", ip.Msk.DecMsk)
 	log.Println("Class:", GetClass(ip.IpBits[0].Dec))
 	log.Println("Start IP:", GetStrIp(startIp))
 	log.Println("End IP:", GetStrIp(endIp))
+	log.Println("Count of possible IP`s:", countIps)
 	log.Println("Network number with mask:", GetStrIp(startIp))
 	log.Println("Host number with mask:", GetStrIp(hostIp))
 	log.Println("Network number without mask:", GetStrIp(netWorkIp))
