@@ -135,6 +135,17 @@ func GetClass(ip int) string {
 	}
 }
 
+func MinusOperation(fIp []int, sIp []int) []int {
+	if len(sIp) != len(fIp) {
+		return nil
+	}
+	var resBits []int
+	for i, ipBit := range fIp {
+		resBits = append(resBits, ipBit-sIp[i])
+	}
+	return resBits
+}
+
 func GetStrIp(bits []IpBit) string {
 	strIp := ``
 	for _, bit := range bits {
@@ -151,20 +162,23 @@ func LocalIP() error {
 	}
 	strIp, strMask := GetIpAndMask(adr[3].String())
 	ip, err := GetIp(strIp, strMask)
-
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	///Применить маску подсети к ip
 	var startIp []IpBit
 	for i, bit := range ip.IpBits {
 		bitRes := AndOperation(ip.Msk.Bit[i].Bit, bit.Bit)
 		dec := BinToDesc(bitRes)
 		startIp = append(startIp, IpBit{dec, bitRes})
 	}
+	var hostIp []IpBit
+	for i, bit := range startIp {
+		bitRes := MinusOperation(ip.IpBits[i].Bit, bit.Bit)
+		decRes := BinToDesc(bitRes)
+		hostIp = append(hostIp, IpBit{decRes, bitRes})
+	}
 	var nanMsk []IpBit
-
 	for _, bit := range ip.Msk.Bit {
 		bitRes := NotOperator(bit.Bit)
 		dec := BinToDesc(bitRes)
@@ -181,9 +195,23 @@ func LocalIP() error {
 	log.Println("IP:", GetStrIp(ip.IpBits))
 	log.Println("Mask:", ip.Msk.DecMsk)
 	log.Println("Class:", GetClass(ip.IpBits[0].Dec))
-	log.Println("Start IP:", GetStrIp(startIp))
+	log.Println("Start IP and NetworkNumber:", GetStrIp(startIp))
 	log.Println("End IP:", GetStrIp(endIp))
+	log.Println("Host Ip:", GetStrIp(hostIp))
 	return nil
+}
+
+func GetNetworkNumberAndHost(ip []IpBit) ([]IpBit, []IpBit) {
+	switch GetClass(ip[0].Dec) {
+	case "A":
+		return ip[1:], ip[:1]
+	case "B":
+		return ip[2:], ip[:2]
+	case "C":
+		return ip[3:], ip[:1]
+	default:
+		return ip, ip
+	}
 }
 
 func PrintIP() error {
@@ -214,6 +242,12 @@ func PrintIP() error {
 		dec := BinToDesc(bitRes)
 		nanMsk = append(nanMsk, IpBit{dec, bitRes})
 	}
+	var hostIp []IpBit
+	for i, bit := range startIp {
+		bitRes := MinusOperation(ip.IpBits[i].Bit, bit.Bit)
+		decRes := BinToDesc(bitRes)
+		hostIp = append(hostIp, IpBit{decRes, bitRes})
+	}
 
 	var endIp []IpBit
 	for i, bit := range nanMsk {
@@ -221,12 +255,17 @@ func PrintIP() error {
 		dec := BinToDesc(bitRes)
 		endIp = append(endIp, IpBit{dec, bitRes})
 	}
+	netWorkIp, hostWIp := GetNetworkNumberAndHost(ip.IpBits)
 	///Логируем все результаты
 	log.Println("IP:", GetStrIp(ip.IpBits))
 	log.Println("Mask:", ip.Msk.DecMsk)
 	log.Println("Class:", GetClass(ip.IpBits[0].Dec))
 	log.Println("Start IP:", GetStrIp(startIp))
 	log.Println("End IP:", GetStrIp(endIp))
+	log.Println("Network number with mask:", GetStrIp(startIp))
+	log.Println("Host number with mask:", GetStrIp(hostIp))
+	log.Println("Network number without mask:", GetStrIp(netWorkIp))
+	log.Println("Host number without mask:", GetStrIp(hostWIp))
 	return nil
 }
 
