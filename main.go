@@ -166,11 +166,19 @@ func LocalIP() error {
 		log.Println(err)
 		return err
 	}
+	///Применить маску подсети к ip
 	var startIp []IpBit
 	for i, bit := range ip.IpBits {
 		bitRes := AndOperation(ip.Msk.Bit[i].Bit, bit.Bit)
 		dec := BinToDesc(bitRes)
 		startIp = append(startIp, IpBit{dec, bitRes})
+	}
+	var nanMsk []IpBit
+
+	for _, bit := range ip.Msk.Bit {
+		bitRes := NotOperator(bit.Bit)
+		dec := BinToDesc(bitRes)
+		nanMsk = append(nanMsk, IpBit{dec, bitRes})
 	}
 	var hostIp []IpBit
 	for i, bit := range startIp {
@@ -178,26 +186,25 @@ func LocalIP() error {
 		decRes := BinToDesc(bitRes)
 		hostIp = append(hostIp, IpBit{decRes, bitRes})
 	}
-	var nanMsk []IpBit
-	for _, bit := range ip.Msk.Bit {
-		bitRes := NotOperator(bit.Bit)
-		dec := BinToDesc(bitRes)
-		nanMsk = append(nanMsk, IpBit{dec, bitRes})
-	}
-
 	var endIp []IpBit
 	for i, bit := range nanMsk {
 		bitRes := OrOperation(bit.Bit, startIp[i].Bit)
 		dec := BinToDesc(bitRes)
 		endIp = append(endIp, IpBit{dec, bitRes})
 	}
-	///Логируем все результаты
+	netWorkIp, hostWIp := GetNetworkNumberAndHost(ip.IpBits)
+	countIps := GetCountOfIps(startIp, endIp)
+
 	log.Println("IP:", GetStrIp(ip.IpBits))
 	log.Println("Mask:", ip.Msk.DecMsk)
 	log.Println("Class:", GetClass(ip.IpBits[0].Dec))
-	log.Println("Start IP and NetworkNumber:", GetStrIp(startIp))
+	log.Println("Start IP:", GetStrIp(startIp))
 	log.Println("End IP:", GetStrIp(endIp))
-	log.Println("Host Ip:", GetStrIp(hostIp))
+	log.Println("Count of possible IP`s:", countIps)
+	log.Println("Network number with mask:", GetStrIp(startIp))
+	log.Println("Host number with mask:", GetStrIp(hostIp))
+	log.Println("Network number without mask:", GetStrIp(netWorkIp))
+	log.Println("Host number without mask:", GetStrIp(hostWIp))
 	return nil
 }
 
