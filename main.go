@@ -1,11 +1,10 @@
 package main
 
 import (
-	"encoding/json"
+	"fmt"
 	"log"
 	"math"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -106,7 +105,7 @@ func AndOperation(fIp, sIp []int) []int {
 func OrOperation(fIp, sIp []int) []int {
 	var resIp []int
 	for i := 0; i < len(sIp); i++ {
-		resIp = append(resIp, sIp[i]+fIp[i])
+		resIp = append(resIp, sIp[i]|fIp[i])
 	}
 	return resIp
 }
@@ -119,32 +118,144 @@ func NotOperator(ip []int) []int {
 	return resIp
 }
 
-func main() {
+func GetClass(ip int) string {
+	switch {
+	case ip > 0 && ip <= 127:
+		return "A"
+	case ip > 127 && ip <= 191:
+		return "B"
+	case ip > 191 && ip <= 223:
+		return "C"
+	case ip > 223 && ip <= 239:
+		return "D"
+	case ip > 239 && ip <= 247:
+		return "E"
+	default:
+		return "WRONG IP"
+	}
+}
+
+func GetStrIp(bits []IpBit) string {
+	strIp := ``
+	for _, bit := range bits {
+		strIp += strconv.Itoa(bit.Dec) + "."
+	}
+	return strIp[:len(strIp)-1]
+}
+
+func LocalIP() error {
 	adr, err := net.InterfaceAddrs()
 	if err != nil {
 		log.Println(err)
-		return
+		return err
 	}
-	for _, addr := range adr {
-		log.Println(addr.Network())
-		log.Println(addr.String())
+	strIp, strMask := GetIpAndMask(adr[3].String())
+	ip, err := GetIp(strIp, strMask)
+
+	if err != nil {
+		log.Println(err)
+		return err
 	}
-	return
-	strIp, strMask := GetIpAndMask(adr[1].String())
+	///Применить маску подсети к ip
+	var startIp []IpBit
+	for i, bit := range ip.IpBits {
+		bitRes := AndOperation(ip.Msk.Bit[i].Bit, bit.Bit)
+		dec := BinToDesc(bitRes)
+		startIp = append(startIp, IpBit{dec, bitRes})
+	}
+	var nanMsk []IpBit
+
+	for _, bit := range ip.Msk.Bit {
+		bitRes := NotOperator(bit.Bit)
+		dec := BinToDesc(bitRes)
+		nanMsk = append(nanMsk, IpBit{dec, bitRes})
+	}
+
+	var endIp []IpBit
+	for i, bit := range nanMsk {
+		bitRes := OrOperation(bit.Bit, startIp[i].Bit)
+		dec := BinToDesc(bitRes)
+		endIp = append(endIp, IpBit{dec, bitRes})
+	}
+	///Логируем все результаты
+	log.Println("IP:", GetStrIp(ip.IpBits))
+	log.Println("Mask:", ip.Msk.DecMsk)
+	log.Println("Class:", GetClass(ip.IpBits[0].Dec))
+	log.Println("Start IP:", GetStrIp(startIp))
+	log.Println("End IP:", GetStrIp(endIp))
+	return nil
+}
+
+func PrintIP() error {
+	s := ``
+	log.Println("Print IP/Mask: ")
+	_, err := fmt.Scan(&s)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	strIp, strMask := GetIpAndMask(s)
 	ip, err := GetIp(strIp, strMask)
 	if err != nil {
 		log.Println(err)
-		return
+		return err
 	}
-	bytes, err := json.MarshalIndent(ip, "", "	")
-	if err != nil {
-		log.Println(err)
-		return
+	///Применить маску подсети к ip
+	var startIp []IpBit
+	for i, bit := range ip.IpBits {
+		bitRes := AndOperation(ip.Msk.Bit[i].Bit, bit.Bit)
+		dec := BinToDesc(bitRes)
+		startIp = append(startIp, IpBit{dec, bitRes})
+	}
+	var nanMsk []IpBit
+
+	for _, bit := range ip.Msk.Bit {
+		bitRes := NotOperator(bit.Bit)
+		dec := BinToDesc(bitRes)
+		nanMsk = append(nanMsk, IpBit{dec, bitRes})
 	}
 
-	err = os.WriteFile("object.json", bytes, 0777)
-	if err != nil {
-		log.Println(err)
-		return
+	var endIp []IpBit
+	for i, bit := range nanMsk {
+		bitRes := OrOperation(bit.Bit, startIp[i].Bit)
+		dec := BinToDesc(bitRes)
+		endIp = append(endIp, IpBit{dec, bitRes})
 	}
+	///Логируем все результаты
+	log.Println("IP:", GetStrIp(ip.IpBits))
+	log.Println("Mask:", ip.Msk.DecMsk)
+	log.Println("Class:", GetClass(ip.IpBits[0].Dec))
+	log.Println("Start IP:", GetStrIp(startIp))
+	log.Println("End IP:", GetStrIp(endIp))
+	return nil
+}
+
+func main() {
+	for true {
+		log.Println("Choose operation:\n 1 - Local IP\n 2 - Print IP \n 3 - Exit")
+		n := 0
+		_, err := fmt.Scan(&n)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		switch n {
+		case 1:
+			err := LocalIP()
+			if err != nil {
+				return
+			}
+		case 2:
+			err := PrintIP()
+			if err != nil {
+				return
+			}
+		case 3:
+			log.Println("Good Bye :)")
+			return
+		default:
+			log.Println("Bad request (-_-)")
+		}
+	}
+
 }
