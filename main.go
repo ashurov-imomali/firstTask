@@ -195,7 +195,6 @@ func LocalIP() error {
 	netWorkIp, hostWIp := GetNetworkNumberAndHost(ip.IpBits)
 	countIps := GetCountOfIps(startIp, endIp)
 
-	///Логируем все результаты
 	log.Println("IP:", GetStrIp(ip.IpBits))
 	log.Println("Mask:", ip.Msk.DecMsk)
 	log.Println("Class:", GetClass(ip.IpBits[0].Dec))
