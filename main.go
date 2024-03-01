@@ -204,11 +204,24 @@ func LocalIP() error {
 func GetNetworkNumberAndHost(ip []IpBit) ([]IpBit, []IpBit) {
 	switch GetClass(ip[0].Dec) {
 	case "A":
-		return ip[1:], ip[:1]
+		networkNum := make([]IpBit, 4)
+		networkNum[0] = ip[0]
+		networkHost := make([]IpBit, 4)
+		copy(networkHost[1:], ip[1:])
+		return networkNum, networkHost
+
 	case "B":
-		return ip[2:], ip[:2]
+		networkNum := make([]IpBit, 4)
+		copy(networkNum[:2], ip[:2])
+		networkHost := make([]IpBit, 4)
+		copy(networkHost[2:], ip[2:])
+		return networkNum, networkHost
 	case "C":
-		return ip[3:], ip[:1]
+		networkNum := make([]IpBit, 4)
+		copy(networkNum[:3], ip[:3])
+		networkHost := make([]IpBit, 4)
+		copy(networkHost[3:], ip[3:])
+		return networkNum, networkHost
 	default:
 		return ip, ip
 	}
